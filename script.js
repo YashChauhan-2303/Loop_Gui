@@ -176,13 +176,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 await controlRelay('D', 'ON');
                 podStartButton.classList.add('active');
                 podStartButton.style.backgroundColor = 'red';
-                podStartButton.textContent = 'POD STOP';
+                podStartButton.textContent = 'INVERTER OFF';
             } else {
                 // Turn off Relay A
                 await controlRelay('d', 'OFF');
                 podStartButton.classList.remove('active');
                 podStartButton.style.backgroundColor = 'green';
-                podStartButton.textContent = 'POD START';
+                podStartButton.textContent = 'INVERTER ON';
             }
         });
     } else {
@@ -247,12 +247,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (inverterStartButton.classList.contains('active')) {
                 inverterStartButton.classList.remove('active');
                 inverterStartButton.style.backgroundColor = 'green';
-                inverterStartButton.textContent = 'Inverter START';
+                inverterStartButton.textContent = 'BRAKE ON';
                 await controlRelay('a', 'ON'); // Relay D OFF
             } else {
                 inverterStartButton.classList.add('active');
                 inverterStartButton.style.backgroundColor = 'red';
-                inverterStartButton.textContent = 'Inverter STOP';
+                inverterStartButton.textContent = 'BRAKE OFF';
                 await controlRelay('A', 'OFF'); // Relay D ON
             }
         });
