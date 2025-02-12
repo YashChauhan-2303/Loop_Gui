@@ -9,17 +9,17 @@
   </head>
   <body>
     <header>
-      <img src="./LoopBanner.png" alt="LoopMIT Banner" class="banner-image">
+      <img src="./assets/LoopBanner.png" alt="LoopMIT Banner" class="banner-image">
     </header>
     
     <main class="parameter-grid">
       
       <!-- Control Buttons -->
       <button id="connectESP32" class="connect-button">Connect ESP32</button>
-      <button id="brakeRelease" class="brake-button">INVERTER</button>
+      <button id="InverterStart" class="Inverter-button">Inverter START</button>
       <!--<button id="LVEngage" class="low-voltage-engage">LV START</button> -->
       <button id="launchpadStart" class="launchpad-button">Launchpad START</button>
-      <button id="InverterStart" class="Inverter-button">BRAKE</button>
+      <button id="brakeRelease" class="brake-button">POD START</button>
       <button id="emergencyBrake" class="emergency-brake-button-engage">EMERGENCY STOP</button>
 
       <!-- ESP32 Status (Use unique IDs) -->
@@ -34,14 +34,6 @@
       <div class="parameter-box status-box">
         <label>ESP32 Child 3</label>
         <div class="value-display" id="esp-status-3">Offline</div>
-      </div>
-      <div class="parameter-box status-box">
-        <label>ESP32 Child 4</label>
-        <div class="value-display" id="esp-status-4">Offline</div>
-      </div>
-      <div class="parameter-box status-box">
-        <label>ESP32 Child 5</label>
-        <div class="value-display" id="esp-status-5">Offline</div>
       </div>
 
       <!-- Brake Pressure Reading -->
@@ -68,16 +60,22 @@
         <div class="value-display" id="battery-temp-hv">25°C</div>
       </div>
 
-      <!-- ESP Voltage Reading -->
+      <!-- Inverter Voltage Reading -->
       <div class="parameter-box">
-        <label>ESP Voltage</label>
-        <div class="value-display" id="ESP-voltage">5V</div>
+        <label>Inverter Voltage</label>
+        <div class="value-display" id="Inverter-voltage">VB1</div>
       </div>
 
       <!-- LVS Voltage Reading -->
       <div class="parameter-box">
         <label>LVS Voltage</label>
-        <div class="value-display" id="LVS-voltage">24V</div>
+        <div class="value-display" id="LVS-voltage">VB2</div>
+      </div>
+
+      <!-- Contacter Voltage Reading -->
+      <div class="parameter-box">
+        <label>Contacter Voltage</label>
+        <div class="value-display" id="Contacter-voltage">VB3</div>
       </div>
 
       <!-- Pod Speed -->
