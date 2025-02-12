@@ -64,6 +64,24 @@ async function handleData(data) {
                 console.error('Speed display element not found');
             }
         }
+
+        // Handle voltage readings
+        if (data.VB1 !== undefined && data.VB2 !== undefined && data.VB3 !== undefined) {
+            const inverterVoltage = document.getElementById('Inverter-voltage');
+            const lvsVoltage = document.getElementById('LVS-voltage');
+            const contacterVoltage = document.getElementById('Contacter-voltage');
+            if (inverterVoltage) {
+                inverterVoltage.textContent = `${data.VB1}V`;
+            }
+            if (lvsVoltage) {
+                lvsVoltage.textContent = `${data.VB2}V`;
+            }
+            if (contacterVoltage) {
+                contacterVoltage.textContent = `${data.VB3}V`;
+            }
+        }
+        
+        // (Other data handling code if any...)
     } catch (error) {
         console.error('Error processing data:', error);
     }
@@ -160,58 +178,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
         console.error('Connect button not found');
     }
 
-    // POD START button toggle functionality with relay control
+    // POD START button toggle functionality
     if (podStartButton) {
         console.log('POD START button found');
-        let podStartState = false; // Track the state of the button and relay
-
         podStartButton.addEventListener('click', async () => {
             console.log('POD START button clicked');
-            
-            // Toggle state
-            podStartState = !podStartState;
-
-            if (podStartState) {
-                // Turn on Relay A
-                await controlRelay('D', 'ON');
-                podStartButton.classList.add('active');
-                podStartButton.style.backgroundColor = 'red';
-                podStartButton.textContent = 'INVERTER OFF';
-            } else {
-                // Turn off Relay A
-                await controlRelay('d', 'OFF');
+            if (podStartButton.classList.contains('active')) {
                 podStartButton.classList.remove('active');
                 podStartButton.style.backgroundColor = 'green';
-                podStartButton.textContent = 'INVERTER ON';
+                podStartButton.textContent = 'POD START';
+                await controlRelay('a', 'OFF'); // Relay A OFF
+            } else {
+                podStartButton.classList.add('active');
+                podStartButton.style.backgroundColor = 'red';
+                podStartButton.textContent = 'POD STOP';
+                await controlRelay('A', 'ON'); // Relay A ON
             }
         });
     } else {
         console.error('POD START button not found');
     }
 
-    // LV START button toggle functionality with relay control
+    // LV START button toggle functionality
     if (lvStartButton) {
         console.log('LV START button found');
-        let lvStartState = false; // Track the state of the button and relay
-
         lvStartButton.addEventListener('click', async () => {
             console.log('LV START button clicked');
-            
-            // Toggle state
-            lvStartState = !lvStartState;
-
-            if (lvStartState) {
-                // Turn on Relay B
-                await controlRelay('B', 'ON');
+            if (lvStartButton.classList.contains('active')) {
+                lvStartButton.classList.remove('active');
+                lvStartButton.style.backgroundColor = 'green';
+                lvStartButton.textContent = 'LV START';
+                await controlRelay('B', 'OFF'); // Relay B OFF
+            } else {
                 lvStartButton.classList.add('active');
                 lvStartButton.style.backgroundColor = 'red';
                 lvStartButton.textContent = 'LV STOP';
-            } else {
-                // Turn off Relay B
-                await controlRelay('b', 'OFF');
-                lvStartButton.classList.remove('active');
-                lvStartButton.style.backgroundColor = 'green';
-                lvStartButton.textContent = 'LV STOP';
+                await controlRelay('b', 'ON'); // Relay B ON
             }
         });
     } else {
@@ -227,12 +229,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 launchpadStartButton.classList.remove('active');
                 launchpadStartButton.style.backgroundColor = 'green';
                 launchpadStartButton.textContent = 'Launchpad START';
-                await controlRelay('c', 'ON'); // Relay C OFF
+                await controlRelay('c', 'OFF'); // Relay C OFF
             } else {
                 launchpadStartButton.classList.add('active');
                 launchpadStartButton.style.backgroundColor = 'red';
                 launchpadStartButton.textContent = 'Launchpad STOP';
-                await controlRelay('C', 'Off'); // Relay C ON
+                await controlRelay('C', 'ON'); // Relay C ON
             }
         });
     } else {
@@ -247,13 +249,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
             if (inverterStartButton.classList.contains('active')) {
                 inverterStartButton.classList.remove('active');
                 inverterStartButton.style.backgroundColor = 'green';
-                inverterStartButton.textContent = 'BRAKE ON';
-                await controlRelay('a', 'ON'); // Relay D OFF
+                inverterStartButton.textContent = 'Inverter START';
+                await controlRelay('D', 'OFF'); // Relay D OFF
             } else {
                 inverterStartButton.classList.add('active');
                 inverterStartButton.style.backgroundColor = 'red';
-                inverterStartButton.textContent = 'BRAKE OFF';
-                await controlRelay('A', 'OFF'); // Relay D ON
+                inverterStartButton.textContent = 'Inverter STOP';
+                await controlRelay('d', 'ON'); // Relay D ON
             }
         });
     } else {
