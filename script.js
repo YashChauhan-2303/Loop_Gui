@@ -31,28 +31,120 @@ function calculateSpeed(acceleration) {
     return Math.abs(acceleration); // Simple conversion of acceleration to speed
 }
 
+// async function handleData(data) {
+//     try {
+//         console.log('Parsed data:', data);
+
+//         // Handle temperature
+//         if (data.temperature !== undefined) {
+//             const temp = parseFloat(data.temperature);
+//             console.log('Temperature received:', temp);
+//             const tempDisplay = document.getElementById('motor-temp');
+//             if (tempDisplay) {
+//                 tempDisplay.textContent = `${temp.toFixed(1)}°C`;
+//                 console.log('Temperature display updated');
+//             } else {
+//                 console.error('Temperature display element not found');
+//             }
+//             if (temp > CRITICAL_TEMP) {
+//                 showTemperatureAlert(temp);
+//                 await activateEmergencyBrakes();
+//             }
+//         }
+
+//         // Handle IMU acceleration
+//         if (data.accel && Array.isArray(data.accel)) {
+//             const maxAccel = Math.max(...data.accel.map(Math.abs));
+//             const speed = calculateSpeed(maxAccel);
+//             const speedElement = document.getElementById('speed-value');
+//             if (speedElement) {
+//                 speedElement.textContent = `${speed.toFixed(2)} m/s`;
+//                 console.log('Speed display updated');
+//             } else {
+//                 console.error('Speed display element not found');
+//             }
+//         }
+
+//         // Handle voltage readings
+//         if (data.VB1 !== undefined && data.VB2 !== undefined && data.VB3 !== undefined) {
+//             const inverterVoltage = document.getElementById('Inverter-voltage');
+//             const lvsVoltage = document.getElementById('LVS-voltage');
+//             const contacterVoltage = document.getElementById('Contacter-voltage');
+//             if (inverterVoltage) {
+//                 inverterVoltage.textContent = `${data.VB1}V`;
+//             }
+//             if (lvsVoltage) {
+//                 lvsVoltage.textContent = `${data.VB2}V`;
+//             }
+//             if (contacterVoltage) {
+//                 contacterVoltage.textContent = `${data.VB3}V`;
+//             }
+//         }
+        
+//         // (Other data handling code if any...)
+//     } catch (error) {
+//         console.error('Error processing data:', error);
+//     }
+// }
+
 async function handleData(data) {
     try {
         console.log('Parsed data:', data);
 
-        // Handle temperature
-        if (data.temperature !== undefined) {
-            const temp = parseFloat(data.temperature);
-            console.log('Temperature received:', temp);
-            const tempDisplay = document.getElementById('motor-temp');
-            if (tempDisplay) {
-                tempDisplay.textContent = `${temp.toFixed(1)}°C`;
-                console.log('Temperature display updated');
-            } else {
-                console.error('Temperature display element not found');
+        // Handle MLX90614 and DS18B20 temperatures
+        if (data.mlxTemperature !== undefined || data.dsTemperature !== undefined) {
+            const mlxTemp = data.mlxTemperature;
+            const dsTemp = data.dsTemperature;
+            
+            // Update MLX90614 temperature display
+            const mlxTempDisplay = document.getElementById('battery-temp-lv');
+            if (mlxTempDisplay && mlxTemp !== undefined) {
+                mlxTempDisplay.textContent = `${mlxTemp.toFixed(1)}°C`;
+                console.log('MLX temperature display updated:', mlxTemp);
             }
-            if (temp > CRITICAL_TEMP) {
-                showTemperatureAlert(temp);
+            
+            // Update DS18B20 temperature display
+            const dsTempDisplay = document.getElementById('motor-temp');
+            if (dsTempDisplay && dsTemp !== undefined) {
+                dsTempDisplay.textContent = `${dsTemp.toFixed(1)}°C`;
+                console.log('DS temperature display updated:', dsTemp);
+            }
+
+            // Check for critical temperature from either sensor
+            if (mlxTemp > CRITICAL_TEMP || dsTemp > CRITICAL_TEMP) {
+                const criticalTemp = Math.max(mlxTemp || 0, dsTemp || 0);
+                showTemperatureAlert(criticalTemp);
                 await activateEmergencyBrakes();
             }
         }
 
-        // Handle IMU acceleration
+        // Handle additional temperature sensors (object and ambient)
+        if (data.objectTemp !== undefined || data.ambientTemp !== undefined) {
+            const objTemp = data.objectTemp;
+            const ambTemp = data.ambientTemp;
+            
+            // Update object temperature display
+            const objTempDisplay = document.getElementById('object-temp');
+            if (objTempDisplay && objTemp !== undefined) {
+                objTempDisplay.textContent = `${objTemp.toFixed(1)}°C`;
+                console.log('Object temperature display updated:', objTemp);
+            }
+            
+            // Update ambient temperature display
+            const ambTempDisplay = document.getElementById('ambient-temp');
+            if (ambTempDisplay && ambTemp !== undefined) {
+                ambTempDisplay.textContent = `${ambTemp.toFixed(1)}°C`;
+                console.log('Ambient temperature display updated:', ambTemp);
+            }
+
+            // Check for critical temperature
+            if (objTemp > CRITICAL_TEMP) {
+                showTemperatureAlert(objTemp);
+                await activateEmergencyBrakes();
+            }
+        }
+
+        // Handle IMU acceleration (keep existing code)
         if (data.accel && Array.isArray(data.accel)) {
             const maxAccel = Math.max(...data.accel.map(Math.abs));
             const speed = calculateSpeed(maxAccel);
@@ -65,7 +157,7 @@ async function handleData(data) {
             }
         }
 
-        // Handle voltage readings
+        // Handle voltage readings (keep existing code)
         if (data.VB1 !== undefined && data.VB2 !== undefined && data.VB3 !== undefined) {
             const inverterVoltage = document.getElementById('Inverter-voltage');
             const lvsVoltage = document.getElementById('LVS-voltage');
@@ -80,8 +172,6 @@ async function handleData(data) {
                 contacterVoltage.textContent = `${data.VB3}V`;
             }
         }
-        
-        // (Other data handling code if any...)
     } catch (error) {
         console.error('Error processing data:', error);
     }
