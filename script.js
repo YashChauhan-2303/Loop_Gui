@@ -3,12 +3,166 @@ let reader;
 let writer;
 let keepReading = true;
 let buffer = ''; // Buffer to accumulate partial data
+let receivedJsonData = []; // Stores all received JSON data
 const CRITICAL_TEMP = 120; // Critical temperature threshold in Celsius
+
+// Add these variables for ESP status tracking
+let lastParentEspData = new Date();  // Tracks last data received from parent ESP32
+let childEspLastSeen = [
+  new Date(),  // Child ESP32 #1
+  new Date(),  // Child ESP32 #2
+  new Date()   // Child ESP32 #3
+];
+const CONNECTION_TIMEOUT = 5000;      // 5 seconds timeout to consider device offline
+let statusCheckInterval;             // Interval for checking connection status
+
+// Utility function for calculating time ago
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - timestamp) / 1000 / 60);
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${Math.floor(diffInHours / 24)}d ago`;
+}
+
+// Function to update ESP status indicators
+// function updateESPStatus() {
+//     const now = new Date();
+    
+//     // Update Parent ESP32 status
+//     const parentElement = document.getElementById('esp-parent');
+//     if (parentElement) {
+//         const statusIcon = parentElement.querySelector('.status-icon');
+//         const statusBadge = parentElement.querySelector('.status-badge');
+//         const lastSeen = parentElement.querySelector('.last-seen');
+        
+//         if (now - lastParentEspData < CONNECTION_TIMEOUT) {
+//             // Parent ESP32 is online
+//             statusIcon?.classList.add('online');
+//             statusBadge.textContent = 'Online';
+//             statusBadge?.classList.add('online');
+//             const timeAgo = getTimeAgo(lastParentEspData);
+//             lastSeen.textContent = `Last seen: ${timeAgo}`;
+//         } else {
+//             // Parent ESP32 is offline
+//             statusIcon?.classList.remove('online');
+//             statusBadge.textContent = 'Offline';
+//             statusBadge?.classList.remove('online');
+//             lastSeen.textContent = 'Last seen: Disconnected';
+//         }
+//     }
+    
+//     // Update Child ESP32 statuses
+//     for (let i = 1; i <= 3; i++) {
+//         const childElement = document.getElementById(`esp-child-${i}`);
+//         if (childElement) {
+//             const statusIcon = childElement.querySelector('.status-icon');
+//             const statusBadge = childElement.querySelector('.status-badge');
+//             const lastSeen = childElement.querySelector('.last-seen');
+            
+//             if (now - childEspLastSeen[i-1] < CONNECTION_TIMEOUT) {
+//                 // Child ESP32 is online
+//                 statusIcon?.classList.add('online');
+//                 statusBadge.textContent = 'Online';
+//                 statusBadge?.classList.add('online');
+//                 const timeAgo = getTimeAgo(childEspLastSeen[i-1]);
+//                 lastSeen.textContent = `Last seen: ${timeAgo}`;
+//             } else {
+//                 // Child ESP32 is offline
+//                 statusIcon?.classList.remove('online');
+//                 statusBadge.textContent = 'Offline';
+//                 statusBadge?.classList.remove('online');
+//                 lastSeen.textContent = 'Last seen: Disconnected';
+//             }
+//         }
+//     }
+// }
+
+// Modified updateESPStatus function
+function updateESPStatus() {
+    const now = new Date();
+    
+    // Update Parent ESP32 status
+    const parentElement = document.getElementById('esp-parent');
+    if (parentElement) {
+        const statusIcon = parentElement.querySelector('.status-icon');
+        const statusBadge = parentElement.querySelector('.status-badge');
+        const lastSeen = parentElement.querySelector('.last-seen');
+        
+        if (now - lastParentEspData < CONNECTION_TIMEOUT) {
+            // Parent ESP32 is online
+            statusIcon?.classList.add('online');
+            statusBadge.textContent = 'Online';
+            statusBadge?.classList.add('online');
+            parentElement.classList.add('online');     // Add class to full box
+            parentElement.classList.remove('offline'); // Remove offline class
+            const timeAgo = getTimeAgo(lastParentEspData);
+            lastSeen.textContent = `Last seen: ${timeAgo}`;
+        } else {
+            // Parent ESP32 is offline
+            statusIcon?.classList.remove('online');
+            statusBadge.textContent = 'Offline';
+            statusBadge?.classList.remove('online');
+            parentElement.classList.remove('online');  // Remove online class
+            parentElement.classList.add('offline');    // Add class to full box
+            lastSeen.textContent = 'Last seen: Disconnected';
+        }
+    }
+    
+    // Update Child ESP32 statuses
+    for (let i = 1; i <= 3; i++) {
+        const childElement = document.getElementById(`esp-child-${i}`);
+        if (childElement) {
+            const statusIcon = childElement.querySelector('.status-icon');
+            const statusBadge = childElement.querySelector('.status-badge');
+            const lastSeen = childElement.querySelector('.last-seen');
+            
+            if (now - childEspLastSeen[i-1] < CONNECTION_TIMEOUT) {
+                // Child ESP32 is online
+                statusIcon?.classList.add('online');
+                statusBadge.textContent = 'Online';
+                statusBadge?.classList.add('online');
+                childElement.classList.add('online');     // Add class to full box
+                childElement.classList.remove('offline'); // Remove offline class
+                const timeAgo = getTimeAgo(childEspLastSeen[i-1]);
+                lastSeen.textContent = `Last seen: ${timeAgo}`;
+            } else {
+                // Child ESP32 is offline
+                statusIcon?.classList.remove('online');
+                statusBadge.textContent = 'Offline';
+                statusBadge?.classList.remove('online');
+                childElement.classList.remove('online');  // Remove online class
+                childElement.classList.add('offline');    // Add class to full box
+                lastSeen.textContent = 'Last seen: Disconnected';
+            }
+        }
+    }
+}
 
 // Safety functions
 function showTemperatureAlert(temp) {
     alert(`WARNING: LIM Temperature Critical (${temp}°C)\nEmergency Brakes Engaged!`);
 }
+
+function downloadJsonData() {
+    if (receivedJsonData.length === 0) {
+        alert("No data to download.");
+        return;
+    }
+
+    const jsonString = JSON.stringify(receivedJsonData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "esp_data.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 
 async function activateEmergencyBrakes() {
     if (writer) {
@@ -16,11 +170,23 @@ async function activateEmergencyBrakes() {
             await writer.write("EMERGENCY_BRAKE\n");
             console.log("Emergency brakes activated due to critical temperature");
             
-            // Trigger emergency brake button visual feedback
-            const emergencyButton = document.getElementById('emergencyBrake');
-            if (emergencyButton) {
-                emergencyButton.style.backgroundColor = '#ff0000';
+            // Get pod stop button and handle everything related to it
+            const podStop = document.getElementById('podStop');
+            if (podStop) {
+                // Change button color to red
+                podStop.style.backgroundColor = '#ff0000';
+                
+                // Trigger the stop if not already stopped
+                if (!podStop.classList.contains('active')) {
+                    console.log('Automatically triggering pod stop due to critical temperature');
+                    podStop.click(); // This will trigger the existing click event handler
+                } else {
+                    console.log('Pod already stopped');
+                }
+            } else {
+                console.error('Pod stop button not found');
             }
+
         } catch (error) {
             console.error("Failed to activate emergency brakes:", error);
         }
@@ -31,65 +197,40 @@ function calculateSpeed(acceleration) {
     return Math.abs(acceleration); // Simple conversion of acceleration to speed
 }
 
-// async function handleData(data) {
-//     try {
-//         console.log('Parsed data:', data);
-
-//         // Handle temperature
-//         if (data.temperature !== undefined) {
-//             const temp = parseFloat(data.temperature);
-//             console.log('Temperature received:', temp);
-//             const tempDisplay = document.getElementById('motor-temp');
-//             if (tempDisplay) {
-//                 tempDisplay.textContent = `${temp.toFixed(1)}°C`;
-//                 console.log('Temperature display updated');
-//             } else {
-//                 console.error('Temperature display element not found');
-//             }
-//             if (temp > CRITICAL_TEMP) {
-//                 showTemperatureAlert(temp);
-//                 await activateEmergencyBrakes();
-//             }
-//         }
-
-//         // Handle IMU acceleration
-//         if (data.accel && Array.isArray(data.accel)) {
-//             const maxAccel = Math.max(...data.accel.map(Math.abs));
-//             const speed = calculateSpeed(maxAccel);
-//             const speedElement = document.getElementById('speed-value');
-//             if (speedElement) {
-//                 speedElement.textContent = `${speed.toFixed(2)} m/s`;
-//                 console.log('Speed display updated');
-//             } else {
-//                 console.error('Speed display element not found');
-//             }
-//         }
-
-//         // Handle voltage readings
-//         if (data.VB1 !== undefined && data.VB2 !== undefined && data.VB3 !== undefined) {
-//             const inverterVoltage = document.getElementById('Inverter-voltage');
-//             const lvsVoltage = document.getElementById('LVS-voltage');
-//             const contacterVoltage = document.getElementById('Contacter-voltage');
-//             if (inverterVoltage) {
-//                 inverterVoltage.textContent = `${data.VB1}V`;
-//             }
-//             if (lvsVoltage) {
-//                 lvsVoltage.textContent = `${data.VB2}V`;
-//             }
-//             if (contacterVoltage) {
-//                 contacterVoltage.textContent = `${data.VB3}V`;
-//             }
-//         }
-        
-//         // (Other data handling code if any...)
-//     } catch (error) {
-//         console.error('Error processing data:', error);
-//     }
-// }
-
 async function handleData(data) {
     try {
         console.log('Parsed data:', data);
+
+        // Store the received data
+        receivedJsonData.push(data);
+
+        // Update parent ESP timestamp
+        lastParentEspData = new Date();
+        
+        // Handle device status updates
+        if (data.device !== undefined && data.status !== undefined) {
+            const deviceId = data.device;
+            if (deviceId >= 1 && deviceId <= 3) {
+                // Update the corresponding child ESP timestamp
+                childEspLastSeen[deviceId-1] = new Date();
+                console.log(`Updated Child ESP ${deviceId} last seen timestamp`);
+            }
+
+            // This is a device status message
+            const isOnline = data.status === "online";
+            const batteryLevel = data.battery;
+            
+            // Update the appropriate ESP status display
+            const statusDisplay = document.getElementById(`esp-status-${deviceId}`);
+            if (statusDisplay) {
+                statusDisplay.textContent = isOnline ? "Online" : "Offline";
+                statusDisplay.classList.remove(isOnline ? 'offline' : 'online');
+                statusDisplay.classList.add(isOnline ? 'online' : 'offline');
+            }
+            
+            // Log the status update
+            console.log(`ESP ${deviceId} is ${isOnline ? 'online' : 'offline'} with battery ${batteryLevel}`);
+        }
 
         // Handle MLX90614 and DS18B20 temperatures
         if (data.mlxTemperature !== undefined || data.dsTemperature !== undefined) {
@@ -103,13 +244,21 @@ async function handleData(data) {
                 console.log('MLX temperature display updated:', mlxTemp);
             }
             
-            // Update DS18B20 temperature display
+            // Update DS18B20 temperature display (LIM Temperature)
             const dsTempDisplay = document.getElementById('motor-temp');
             if (dsTempDisplay && dsTemp !== undefined) {
                 dsTempDisplay.textContent = `${dsTemp.toFixed(1)}°C`;
                 console.log('DS temperature display updated:', dsTemp);
             }
-
+            
+            // NEW FEATURE: If the parent ESP32 is connected and LIM temperature is 0, wait 5 seconds and then activate emergency brakes.
+            const currentTime = new Date();
+            if ((currentTime - lastParentEspData < CONNECTION_TIMEOUT) && dsTemp === 95) {
+                console.log("Parent ESP32 is connected and LIM temperature is 0. Waiting for 5 seconds before activating emergency brakes.");
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
+                await activateEmergencyBrakes();
+            }
+            
             // Check for critical temperature from either sensor
             if (mlxTemp > CRITICAL_TEMP || dsTemp > CRITICAL_TEMP) {
                 const criticalTemp = Math.max(mlxTemp || 0, dsTemp || 0);
@@ -144,7 +293,7 @@ async function handleData(data) {
             }
         }
 
-        // Handle IMU acceleration (keep existing code)
+        // Handle IMU acceleration
         if (data.accel && Array.isArray(data.accel)) {
             const maxAccel = Math.max(...data.accel.map(Math.abs));
             const speed = calculateSpeed(maxAccel);
@@ -157,33 +306,58 @@ async function handleData(data) {
             }
         }
 
-        // Handle voltage readings (keep existing code)
+        // Handle voltage readings
         if (data.VB1 !== undefined && data.VB2 !== undefined && data.VB3 !== undefined) {
             const inverterVoltage = document.getElementById('Inverter-voltage');
             const lvsVoltage = document.getElementById('LVS-voltage');
             const contacterVoltage = document.getElementById('Contacter-voltage');
             if (inverterVoltage) {
-                inverterVoltage.textContent = `${data.VB1}V`;
+                inverterVoltage.textContent = `${data.VB2}V`;
             }
             if (lvsVoltage) {
-                lvsVoltage.textContent = `${data.VB2}V`;
+                lvsVoltage.textContent = `${data.VB1}V`;
             }
             if (contacterVoltage) {
                 contacterVoltage.textContent = `${data.VB3}V`;
             }
         }
+
+        // Update orientation display if available
+        if (data.orientation && Array.isArray(data.orientation)) {
+            const orientationX = data.orientation[0];
+            const orientationY = data.orientation[1];
+            const orientationZ = data.orientation[2];
+
+            const orientationXDisplay = document.getElementById('orientation-x');
+            const orientationYDisplay = document.getElementById('orientation-y');
+            const orientationZDisplay = document.getElementById('orientation-z');
+
+            if (orientationXDisplay) {
+                orientationXDisplay.textContent = `${orientationX.toFixed(1)}°`;
+            }
+            if (orientationYDisplay) {
+                orientationYDisplay.textContent = `${orientationY.toFixed(1)}°`;
+            }
+            if (orientationZDisplay) {
+                orientationZDisplay.textContent = `${orientationZ.toFixed(1)}°`;
+            }
+        }
+
     } catch (error) {
         console.error('Error processing data:', error);
     }
 }
 
-// Relay control functions
+
 async function controlRelay(relay, state) {
-    console.time(`Relay ${relay}_${state}`);
     if (writer) {
         try {
-            await writer.write(`${relay}_${state}\n`);
-            console.timeEnd(`Relay ${relay}_${state}`);
+            // Just send single character command
+            if (state === 'ON') {
+                await writer.write(`${relay}\n`); // Capital letter for ON
+            } else {
+                await writer.write(`${relay.toLowerCase()}\n`); // Lowercase for OFF
+            }
         } catch (error) {
             console.error(`Failed to control relay ${relay}:`, error);
         }
@@ -197,6 +371,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const lvStartButton = document.getElementById('LVEngage');
     const launchpadStartButton = document.getElementById('launchpadStart');
     const inverterStartButton = document.getElementById('InverterStart');
+    const contactor = document.getElementById('contactor');
+    const podStop = document.getElementById('podStop');
+
+    // Start the status update interval
+    statusCheckInterval = setInterval(updateESPStatus, 1000);
 
     if (connectButton) {
         console.log('Connect button found');
@@ -271,44 +450,176 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // POD START button toggle functionality
     if (podStartButton) {
         console.log('POD START button found');
+        // podStartButton.addEventListener('click', async () => {
+        //     console.log('POD START button clicked');
+        //     // if (podStartButton.classList.contains('active')) {
+        //     //     podStartButton.classList.remove('active');
+        //     //     podStartButton.style.backgroundColor = 'green';
+        //     //     podStartButton.textContent = 'POD START';
+        //     //     await controlRelay('a', 'OFF'); // Relay A OFF
+        //     // } else {
+        //     //     podStartButton.classList.add('active');
+        //     //     podStartButton.style.backgroundColor = 'red';
+        //     //     podStartButton.textContent = 'POD STOP';
+        //     //     await controlRelay('A', 'ON'); // Relay A ON
+        //     // }
+        //     // POD START button
+        //     if (podStartButton.classList.contains('active')) {
+        //         podStartButton.classList.remove('active');
+        //         podStartButton.style.backgroundColor = 'green';
+        //         podStartButton.textContent = 'POD START';
+        //         await controlRelay('a'); // Just send 'a' for OFF
+        //     } else {
+        //         podStartButton.classList.add('active');
+        //         podStartButton.style.backgroundColor = 'red';
+        //         podStartButton.textContent = 'POD STOP';
+        //         await controlRelay('A'); // Just send 'A' for ON
+        //     }
+        // });
         podStartButton.addEventListener('click', async () => {
-            console.log('POD START button clicked');
             if (podStartButton.classList.contains('active')) {
                 podStartButton.classList.remove('active');
                 podStartButton.style.backgroundColor = 'green';
                 podStartButton.textContent = 'POD START';
-                await controlRelay('a', 'OFF'); // Relay A OFF
+                await controlRelay('b', 'OFF'); // Now just sends 'a'
             } else {
                 podStartButton.classList.add('active');
                 podStartButton.style.backgroundColor = 'red';
                 podStartButton.textContent = 'POD STOP';
-                await controlRelay('A', 'ON'); // Relay A ON
+                await controlRelay('B', 'ON'); // Now just sends 'A'
             }
         });
     } else {
         console.error('POD START button not found');
     }
+    
+    // POD STOP button toggle functionality
+    if (podStop) {
+        console.log('POD STOP button found');
+        podStop.addEventListener('click', async () => {
+            console.log('POD STOP button clicked');
+            if (podStop.classList.contains('active')) {
+                podStop.classList.remove('active');
+                podStop.style.backgroundColor = '#FFA500';
+                
+                if (podStartButton.classList.contains('active')) {
+                    podStartButton.classList.remove('active');
+                    podStartButton.style.backgroundColor = 'green';
+                    podStartButton.textContent = 'POD START';
+                } else {
+                    podStartButton.classList.add('active');
+                    podStartButton.style.backgroundColor = 'red';
+                    podStartButton.textContent = 'POD STOP';
+                }
+                if (launchpadStartButton.classList.contains('active')) {
+                    launchpadStartButton.classList.remove('active');
+                    launchpadStartButton.style.backgroundColor = 'green';
+                    launchpadStartButton.textContent = 'Launchpad START';
+                } else {
+                    launchpadStartButton.classList.add('active');
+                    launchpadStartButton.style.backgroundColor = 'red';
+                    launchpadStartButton.textContent = 'Launchpad STOP';
+                }
+                if (inverterStartButton.classList.contains('active')) {
+                    inverterStartButton.classList.remove('active');
+                    inverterStartButton.style.backgroundColor = 'green';
+                    inverterStartButton.textContent = 'Inverter START';
+                } else {
+                    inverterStartButton.classList.add('active');
+                    inverterStartButton.style.backgroundColor = 'red';
+                    inverterStartButton.textContent = 'Inverter STOP';
+                }
+                
 
-    // LV START button toggle functionality
-    if (lvStartButton) {
-        console.log('LV START button found');
-        lvStartButton.addEventListener('click', async () => {
-            console.log('LV START button clicked');
-            if (lvStartButton.classList.contains('active')) {
-                lvStartButton.classList.remove('active');
-                lvStartButton.style.backgroundColor = 'green';
-                lvStartButton.textContent = 'LV START';
-                await controlRelay('B', 'OFF'); // Relay B OFF
+                // await controlRelay('b','OFF'); // Relay d OFF
+                await controlRelay('D','ON'); // Relay c OFF
+                // await controlRelay('B', 'ON'); // Relay D ON
+                await controlRelay('A', 'ON'); // Relay C ON
+                await controlRelay('B', 'ON'); // Relay D OFF
+                await controlRelay('C', 'OFF'); // Relay D OFF
             } else {
-                lvStartButton.classList.add('active');
-                lvStartButton.style.backgroundColor = 'red';
-                lvStartButton.textContent = 'LV STOP';
-                await controlRelay('b', 'ON'); // Relay B ON
+                if (podStartButton.classList.contains('active')) {
+                    podStartButton.classList.remove('active');
+                    podStartButton.style.backgroundColor = 'green';
+                    podStartButton.textContent = 'POD START';
+                } else {
+                    podStartButton.classList.add('active');
+                    podStartButton.style.backgroundColor = 'red';
+                    podStartButton.textContent = 'POD STOP';
+                }
+                if (launchpadStartButton.classList.contains('active')) {
+                    launchpadStartButton.classList.remove('active');
+                    launchpadStartButton.style.backgroundColor = 'green';
+                    launchpadStartButton.textContent = 'Launchpad START';
+                } else {
+                    launchpadStartButton.classList.add('active');
+                    launchpadStartButton.style.backgroundColor = 'red';
+                    launchpadStartButton.textContent = 'Launchpad STOP';
+                }
+                if (inverterStartButton.classList.contains('active')) {
+                    inverterStartButton.classList.remove('active');
+                    inverterStartButton.style.backgroundColor = 'green';
+                    inverterStartButton.textContent = 'Inverter START';
+                } else {
+                    inverterStartButton.classList.add('active');
+                    inverterStartButton.style.backgroundColor = 'red';
+                    inverterStartButton.textContent = 'Inverter STOP';
+                }
+
+
+                podStop.classList.add('active');
+                podStop.style.backgroundColor = '#FF4500';
+                // await controlRelay('b','OFF'); // Relay d OFF
+                await controlRelay('a','OFF'); // Relay c OFF
+                await controlRelay('d','OFF'); // Relay c OFF
+                await controlRelay('b', 'OFF'); // Relay D OFF
+                await controlRelay('c', 'OFF'); // Relay D OFF
+                
             }
         });
     } else {
-        console.error('LV START button not found');
+        console.error('POD Stop button not found');
     }
+    
+    // // CONTACTOR button toggle functionality
+    // if (contactor) {
+    //     console.log('contactor button found');
+    //     contactor.addEventListener('click', async () => {
+    //         console.log('contactor button clicked');
+    //         if (contactor.classList.contains('active')) {
+    //             contactor.classList.remove('active');
+    //             contactor.style.backgroundColor = 'green';
+    //             await controlRelay('b', 'OFF'); // Relay d OFF
+    //         } else {
+    //             contactor.classList.add('active');
+    //             contactor.style.backgroundColor = 'red';
+    //             await controlRelay('B', 'ON'); // Relay D ON
+    //         }
+    //     });
+    // } else {
+    //     console.error('contactor button not found');
+    // }
+
+    // // LV START button toggle functionality
+    // if (lvStartButton) {
+    //     console.log('LV START button found');
+    //     lvStartButton.addEventListener('click', async () => {
+    //         console.log('LV START button clicked');
+    //         if (lvStartButton.classList.contains('active')) {
+    //             lvStartButton.classList.remove('active');
+    //             lvStartButton.style.backgroundColor = 'green';
+    //             lvStartButton.textContent = 'LV START';
+    //             await controlRelay('b', 'OFF'); // Relay B OFF
+    //         } else {
+    //             lvStartButton.classList.add('active');
+    //             lvStartButton.style.backgroundColor = 'red';
+    //             lvStartButton.textContent = 'LV STOP';
+    //             await controlRelay('B', 'ON'); // Relay B ON
+    //         }
+    //     });
+    // } else {
+    //     console.error('LV START button not found');
+    // }
 
     // Launchpad START button toggle functionality
     if (launchpadStartButton) {
@@ -340,12 +651,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 inverterStartButton.classList.remove('active');
                 inverterStartButton.style.backgroundColor = 'green';
                 inverterStartButton.textContent = 'Inverter START';
-                await controlRelay('D', 'OFF'); // Relay D OFF
+                await controlRelay('d', 'OFF'); // Relay D OFF
             } else {
                 inverterStartButton.classList.add('active');
                 inverterStartButton.style.backgroundColor = 'red';
                 inverterStartButton.textContent = 'Inverter STOP';
-                await controlRelay('d', 'ON'); // Relay D ON
+                await controlRelay('D', 'ON'); // Relay D ON
             }
         });
     } else {
@@ -368,4 +679,12 @@ window.addEventListener('beforeunload', () => {
     if (reader) reader.cancel();
     if (writer) writer.releaseLock();
     if (port) port.close();
+    if (statusCheckInterval) clearInterval(statusCheckInterval);
 });
+
+const downloadButton = document.getElementById("downloadJsonButton");
+if (downloadButton) {
+    downloadButton.addEventListener("click", downloadJsonData);
+} else {
+    console.error("Download JSON button not found.");
+}
