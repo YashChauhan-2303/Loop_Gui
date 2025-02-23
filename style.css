@@ -1,3 +1,4 @@
+
 body {
     font-family: Arial, sans-serif;
     margin: 0px 20px 20px 20px; 
@@ -34,7 +35,7 @@ h1 {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    height: 120px
+    height: 165px
 }
 
 /* Special case for battery box */
@@ -95,6 +96,36 @@ h1 {
 
 .brake-button {
     background-color: green;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    height: 150px;
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.contactor-button {
+    background-color: green;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    height: 150px;
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.podStop-button {
+    background-color: #FFA500;
     color: white;
     border: none;
     border-radius: 8px;
@@ -244,4 +275,57 @@ h1 {
 
 .status-box .value-display.offline {
     background-color: #f44336;  /* Red */
+}
+
+/* Add these rules to your CSS file */
+.parameter-box.online {
+    background-color: #2b6e31;  /* Darker green for the box */
+}
+
+.parameter-box.offline {
+    background-color: #7e3997;  /* Keep the default purple for offline */
+}
+
+/* Make sure the status badge still shows proper colors */
+.parameter-box.online .status-badge.online {
+    background-color: #4CAF50;  /* Lighter green for the badge */
+}
+
+.parameter-box.offline .status-badge.offline {
+    background-color: #f44336;  /* Red for the badge */
+}
+
+.download-json-button {
+    background-color: seagreen;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    height: 195px;
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.download-json-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.orientation-button {
+    background-color: #800080; /* A purple shade */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 30px;
+    cursor: default; /* Indicate that these are for display only */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    height: 195px;
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
 }
