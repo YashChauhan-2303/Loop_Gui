@@ -9,21 +9,28 @@
   </head>
   <body>
     <header>
-      <img src="LoopBanner.png" alt="LoopMIT Banner" class="banner-image">
+      <img src="./assets/LoopBanner.png" alt="LoopMIT Banner" class="banner-image">
     </header>
     
     <main class="parameter-grid">
       
       <!-- Control Buttons -->
       <button id="connectESP32" class="connect-button">Connect ESP32</button>
+      <!-- RELAY D -->
       <button id="InverterStart" class="Inverter-button">Inverter START</button>
       <!--<button id="LVEngage" class="low-voltage-engage">LV START</button> -->
+      <!-- RELAY C -->
       <button id="launchpadStart" class="launchpad-button">Launchpad START</button>
+      <!-- RELAY A -->
       <button id="brakeRelease" class="brake-button">POD START</button>
-      <button id="emergencyBrake" class="emergency-brake-button-engage">EMERGENCY STOP</button>
+      <!-- RELAY B 
+      <button id="contactor" class="contactor-button">CONTACTOR</button>-->
+      <!-- RELAY B AND A -->
+      <button id="podStop" class="podStop-button">EMERGENCY BRAKING</button>
+      <!-- <button id="emergencyBrake" class="emergency-brake-button-engage">EMERGENCY STOP</button> -->
 
       <!-- ESP32 Status (Use unique IDs) -->
-      <div class="parameter-box status-box">
+      <!-- <div class="parameter-box status-box">
         <label>ESP32 Child 1</label>
         <div class="value-display" id="esp-status-1">Offline</div>
       </div>
@@ -34,13 +41,49 @@
       <div class="parameter-box status-box">
         <label>ESP32 Child 3</label>
         <div class="value-display" id="esp-status-3">Offline</div>
+      </div> -->
+      
+<!-- Child ESP32 #1 -->
+<div class="esp-device esp-status-container parameter-box status-box" id="esp-child-1">
+  <div class="device-info">
+      <div class="status-icon"></div>
+      <div class="device-details">
+          <div class="device-name"><label>ESP32 Child 1</label></div>
+          <div class="last-seen value-display">Last seen: Never</div>
       </div>
+  </div>
+  <div class="status-badge value-display" id="esp-status-1">Offline</div>
+</div>
 
-      <!-- Brake Pressure Reading -->
+<!-- Child ESP32 #2 -->
+<div class="esp-device esp-status-container parameter-box status-box" id="esp-child-2">
+  <div class="device-info">
+      <div class="status-icon"></div>
+      <div class="device-details">
+          <div class="device-name"><label>ESP32 Child 2</label></div>
+          <div class="last-seen value-display">Last seen: Never</div>
+      </div>
+  </div>
+  <div class="status-badge value-display" id="esp-status-2">Offline</div>
+</div>
+
+<!-- Child ESP32 #3 -->
+<div class="esp-device esp-status-container parameter-box status-box" id="esp-child-3">
+  <div class="device-info">
+      <div class="status-icon"></div>
+      <div class="device-details">
+          <div class="device-name"><label>ESP32 Child 3</label></div>
+          <div class="last-seen value-display">Last seen: Never</div>
+      </div>
+  </div>
+  <div class="status-badge value-display" id="esp-status-3">Offline</div>
+</div>
+
+      <!-- Brake Pressure Reading 
       <div class="parameter-box">
         <label>Brake Pressure</label>
         <div class="value-display" id="pressure-value-1">1.0 atm</div>
-      </div>
+      </div>-->
 
       <!-- LIM Temperature -->
       <div class="parameter-box">
@@ -54,11 +97,11 @@
         <div class="value-display" id="battery-temp-lv">25°C</div>
       </div>
 
-      <!-- High Voltage Battery Temperature -->
+      <!-- High Voltage Battery Temperature 
       <div class="parameter-box">
         <label>High Voltage Battery Temperature</label>
         <div class="value-display" id="battery-temp-hv">25°C</div>
-      </div>
+      </div> -->
 
       <!-- Inverter Voltage Reading -->
       <div class="parameter-box">
@@ -90,11 +133,11 @@
         <div class="value-display" id="distance-value">0 m</div>
       </div>
 
-      <!-- Air Tank Pressure (Rename second pressure-value) -->
+      <!-- Air Tank Pressure (Rename second pressure-value) 
       <div class="parameter-box">
         <label>Air Tank Pressure</label>
         <div class="value-display" id="pressure-value-2">1.0 atm</div>
-      </div>
+      </div> -->
       
       <!-- Battery Status -->
       <!-- <div class="parameter-box battery-box">
@@ -105,7 +148,7 @@
         </div>
       </div> -->
       
-      <!-- Gap Height Readings (Rename "gap4" to "gap5") -->
+      <!-- Gap Height Readings (Rename "gap4" to "gap5") 
       <div class="parameter-box">
         <label>Gap Heights</label>
         <div class="gap-container">
@@ -115,7 +158,24 @@
             <div class="value-display" id="gap4">Sensor-4: 0mm</div>
             <div class="value-display" id="gap5">Sensor-5: 0mm</div>
         </div>
+      </div> -->
+
+      <!-- Orientation Display Buttons -->
+      <div class="parameter-box">
+        <label>Orientation X</label>
+        <div class="value-display" id="orientation-x">0°</div>
       </div>
+      <div class="parameter-box">
+        <label>Orientation Y</label>
+        <div class="value-display" id="orientation-y">0°</div>
+      </div>
+      <div class="parameter-box">
+        <label>Orientation Z</label>
+        <div class="value-display" id="orientation-z">0°</div>
+      </div>
+
+      <button id="downloadJsonButton" class="download-json-button">Download JSON Data</button>
+
 
     </main>
   </body>
